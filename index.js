@@ -4,7 +4,6 @@ const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔥 ROOT CHECK
 app.get("/", (req, res) => {
     res.json({ status: "API online" });
 });
@@ -144,18 +143,21 @@ app.get("/search", async (req, res) => {
     }
 
     try {
-        const url = `https://games.roblox.com/v1/games/list?keyword=${encodeURIComponent(query)}&limit=30`;
+        const url = `https://apis.roblox.com/search-api/omni-search?searchQuery=${encodeURIComponent(query)}&pageType=all`;
 
         const result = await axios.get(url);
 
-        const games = result.data.data || [];
+        const games =
+            result.data?.games ||
+            result.data?.experiences ||
+            [];
 
-        const clean = games.map(g => ({
+        const clean = (games || []).map(g => ({
             name: g.name,
-            placeId: g.rootPlaceId,
-            universeId: g.id,
-            playing: g.playing,
-            visits: g.visits
+            placeId: g.rootPlaceId || g.placeId,
+            universeId: g.universeId,
+            playing: g.playing || 0,
+            visits: g.visits || 0
         }));
 
         res.json({
@@ -166,7 +168,8 @@ app.get("/search", async (req, res) => {
 
     } catch (err) {
         res.status(500).json({
-            error: err.message
+            error: err.message,
+            step: "search failed"
         });
     }
 });
