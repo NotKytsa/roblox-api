@@ -2,21 +2,18 @@ app.get("/game/:placeId", async (req, res) => {
     const placeId = req.params.placeId;
 
     try {
-        // 🔹 UniverseId
         const universeRes = await axios.get(
             `https://apis.roblox.com/universes/v1/places/${placeId}/universe`
         );
 
         const universeId = universeRes.data.universeId;
 
-        // 🔹 MAIN GAME API
         const gameRes = await axios.get(
             `https://games.roblox.com/v1/games?universeIds=${universeId}`
         );
 
         const game1 = gameRes.data.data?.[0];
 
-        // 🔹 FALLBACK API (PLUS RICHE)
         let game2 = null;
         try {
             const fb = await axios.get(
@@ -25,14 +22,12 @@ app.get("/game/:placeId", async (req, res) => {
             game2 = fb.data?.[0];
         } catch {}
 
-        // 🔥 MERGE SAFE (priorité fallback si dispo)
         const game = game2 || game1;
 
         if (!game) {
             return res.json({ error: "Game not found" });
         }
 
-        // 🔹 ICON
         let icon = null;
         try {
             const iconRes = await axios.get(
@@ -41,7 +36,6 @@ app.get("/game/:placeId", async (req, res) => {
             icon = iconRes.data.data?.[0]?.imageUrl || null;
         } catch {}
 
-        // 🔹 THUMBNAILS
         let thumbnails = [];
         try {
             const thumbRes = await axios.get(
@@ -51,7 +45,6 @@ app.get("/game/:placeId", async (req, res) => {
             thumbnails = (thumbRes.data.data || []).map(t => t.imageUrl || t.thumbnailUrl);
         } catch {}
 
-        // 🔹 FAVORITES
         let favorites = 0;
         try {
             const favRes = await axios.get(
@@ -60,7 +53,6 @@ app.get("/game/:placeId", async (req, res) => {
             favorites = favRes.data.favoritesCount || 0;
         } catch {}
 
-        // 🔹 GAMEPASSES
         let gamepasses = [];
         try {
             const gpRes = await axios.get(
@@ -69,7 +61,6 @@ app.get("/game/:placeId", async (req, res) => {
             gamepasses = gpRes.data.data || [];
         } catch {}
 
-        // 🔥 SAFE VOTES (DOUBLE SOURCE)
         const likes =
             game.upVotes ??
             game.upvoteCount ??
@@ -82,7 +73,6 @@ app.get("/game/:placeId", async (req, res) => {
             game.thumbsDownCount ??
             0;
 
-        // 🔥 RESPONSE CLEAN
         res.json({
             meta: { universeId, placeId },
 
@@ -131,6 +121,41 @@ app.get("/game/:placeId", async (req, res) => {
         res.status(500).json({
             error: err.message,
             step: "main crash"
+        });
+    }
+});
+
+app.get("/search", async (req, res) => {
+    const query = req.query.q;
+
+    if (!query) {
+        return res.json({ error: "missing query" });
+    }
+
+    try {
+        const url = `https://games.roblox.com/v1/games/list?keyword=${encodeURIComponent(query)}&limit=30`;
+
+        const result = await axios.get(url);
+
+        const games = result.data.data || [];
+
+        const clean = games.map(g => ({
+            name: g.name,
+            placeId: g.rootPlaceId,
+            universeId: g.id,
+            playing: g.playing,
+            visits: g.visits
+        }));
+
+        res.json({
+            query: query.toLowerCase(),
+            count: clean.length,
+            results: clean
+        });
+
+    } catch (err) {
+        res.json({
+            error: err.message
         });
     }
 });
