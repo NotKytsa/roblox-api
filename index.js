@@ -138,26 +138,25 @@ app.get("/game/:placeId", async (req, res) => {
 app.get("/search", async (req, res) => {
     const query = req.query.q;
 
-    if (!query) {
-        return res.json({ error: "missing query" });
-    }
+    if (!query) return res.json({ error: "missing query" });
 
     try {
-        const url = `https://apis.roblox.com/search-api/omni-search?searchQuery=${encodeURIComponent(query)}&pageType=all`;
+        const url = `https://games.roblox.com/v1/games/list?sortOrder=Desc&limit=30`;
 
         const result = await axios.get(url);
 
-        const games =
-            result.data?.games ||
-            result.data?.experiences ||
-            [];
+        let games = result.data.data || [];
 
-        const clean = (games || []).map(g => ({
+        const filtered = games.filter(g =>
+            g.name?.toLowerCase().includes(query.toLowerCase())
+        );
+
+        const clean = filtered.map(g => ({
             name: g.name,
-            placeId: g.rootPlaceId || g.placeId,
-            universeId: g.universeId,
-            playing: g.playing || 0,
-            visits: g.visits || 0
+            placeId: g.rootPlaceId,
+            universeId: g.id,
+            playing: g.playing,
+            visits: g.visits
         }));
 
         res.json({
@@ -168,8 +167,7 @@ app.get("/search", async (req, res) => {
 
     } catch (err) {
         res.status(500).json({
-            error: err.message,
-            step: "search failed"
+            error: err.message
         });
     }
 });
