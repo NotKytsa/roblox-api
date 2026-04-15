@@ -1,3 +1,7 @@
+app.get("/", (req, res) => {
+    res.json({ status: "API online" });
+});
+
 app.get("/game/:placeId", async (req, res) => {
     const placeId = req.params.placeId;
 
