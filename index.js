@@ -1,3 +1,10 @@
+const express = require("express");
+const axios = require("axios");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// 🔥 ROOT CHECK
 app.get("/", (req, res) => {
     res.json({ status: "API online" });
 });
@@ -46,7 +53,9 @@ app.get("/game/:placeId", async (req, res) => {
                 `https://thumbnails.roblox.com/v1/games/multiget-thumbnails?universeIds=${universeId}&size=768x432&format=Png`
             );
 
-            thumbnails = (thumbRes.data.data || []).map(t => t.imageUrl || t.thumbnailUrl);
+            thumbnails = (thumbRes.data.data || []).map(
+                t => t.imageUrl || t.thumbnailUrl
+            );
         } catch {}
 
         let favorites = 0;
@@ -90,10 +99,8 @@ app.get("/game/:placeId", async (req, res) => {
                 currentPlayers: game.playing || 0,
                 maxPlayers: game.maxPlayers || 0,
                 visits: game.visits || 0,
-
                 likes,
                 dislikes,
-
                 favorites
             },
 
@@ -158,8 +165,12 @@ app.get("/search", async (req, res) => {
         });
 
     } catch (err) {
-        res.json({
+        res.status(500).json({
             error: err.message
         });
     }
+});
+
+app.listen(PORT, () => {
+    console.log("🔥 API running on port " + PORT);
 });
