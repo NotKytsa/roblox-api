@@ -4,39 +4,32 @@ const axios = require("axios");
 const app = express();
 const PORT = 3000;
 
-/*
-    🎮 ROBLOX GAME INTELLIGENCE API
-    - clean structure
-    - multi-sources
-    - thumbnails + stats + creator + metadata
-*/
-
 app.get("/game/:placeId", async (req, res) => {
     const placeId = req.params.placeId;
 
     try {
-        // 🌐 1. Convert PlaceId → UniverseId
+        // 1. Convert PlaceId to UniverseId
         const universeRes = await axios.get(
             `https://apis.roblox.com/universes/v1/places/${placeId}/universe`
         );
 
         const universeId = universeRes.data.universeId;
 
-        // 🎮 2. Core Game Data
+        // 2. Core Game Data
         const gameRes = await axios.get(
             `https://games.roblox.com/v1/games?universeIds=${universeId}`
         );
 
         const game = gameRes.data.data[0];
 
-        // 🖼️ 3. ICON
+        // 3. ICON
         const iconRes = await axios.get(
             `https://thumbnails.roblox.com/v1/games/icons?universeIds=${universeId}&size=512x512&format=Png`
         );
 
         const icon = iconRes.data.data?.[0]?.imageUrl || null;
 
-        // 🖼️ 4. THUMBNAILS (screens / previews)
+        // 4. THUMBNAILS
         let thumbnails = [];
 
         try {
@@ -49,7 +42,7 @@ app.get("/game/:placeId", async (req, res) => {
             thumbnails = [];
         }
 
-        // ❤️ 5. FAVORITES
+        // 5. FAVORITES
         let favorites = 0;
 
         try {
@@ -60,7 +53,7 @@ app.get("/game/:placeId", async (req, res) => {
             favorites = favRes.data.favoritesCount;
         } catch (e) {}
 
-        // 💳 6. GAMEPASSES (best-effort)
+        // 6. GAMEPASSES (best-effort)
        let gamepasses = [];
 
         try {
@@ -73,7 +66,7 @@ app.get("/game/:placeId", async (req, res) => {
             gamepasses = [];
         }
 
-        // 📦 7. CLEAN OUTPUT API
+        // 7. OUTPUT API
         const response = {
             meta: {
                 universeId,
