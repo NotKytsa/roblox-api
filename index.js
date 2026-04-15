@@ -78,8 +78,17 @@ app.get("/game/:placeId", async (req, res) => {
                 maxPlayers: game.maxPlayers || 0,
                 visits: game.visits || 0,
 
-                likes: game.upVotes ?? 0,
-                dislikes: game.downVotes ?? 0,
+                likes:
+                    game.upVotes ??
+                    game.upvoteCount ??
+                    game.thumbsUpCount ??
+                    0,
+
+                dislikes:
+                    game.downVotes ??
+                    game.downvoteCount ??
+                    game.thumbsDownCount ??
+                    0,
 
                 favorites
             },
