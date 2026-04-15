@@ -1,9 +1,3 @@
-const express = require("express");
-const axios = require("axios");
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.get("/game/:placeId", async (req, res) => {
     const placeId = req.params.placeId;
 
@@ -15,18 +9,30 @@ app.get("/game/:placeId", async (req, res) => {
 
         const universeId = universeRes.data.universeId;
 
-        // 🔹 Game data
+        // 🔹 MAIN GAME API
         const gameRes = await axios.get(
             `https://games.roblox.com/v1/games?universeIds=${universeId}`
         );
 
-        const game = gameRes.data.data?.[0];
+        const game1 = gameRes.data.data?.[0];
+
+        // 🔹 FALLBACK API (PLUS RICHE)
+        let game2 = null;
+        try {
+            const fb = await axios.get(
+                `https://games.roblox.com/v1/games/multiget-place-details?placeIds=${placeId}`
+            );
+            game2 = fb.data?.[0];
+        } catch {}
+
+        // 🔥 MERGE SAFE (priorité fallback si dispo)
+        const game = game2 || game1;
 
         if (!game) {
             return res.json({ error: "Game not found" });
         }
 
-        // 🔹 ICON (safe)
+        // 🔹 ICON
         let icon = null;
         try {
             const iconRes = await axios.get(
@@ -35,7 +41,7 @@ app.get("/game/:placeId", async (req, res) => {
             icon = iconRes.data.data?.[0]?.imageUrl || null;
         } catch {}
 
-        // 🔹 THUMBNAILS FIXED
+        // 🔹 THUMBNAILS
         let thumbnails = [];
         try {
             const thumbRes = await axios.get(
@@ -54,7 +60,7 @@ app.get("/game/:placeId", async (req, res) => {
             favorites = favRes.data.favoritesCount || 0;
         } catch {}
 
-        // 🔹 GAMEPASSES SAFE
+        // 🔹 GAMEPASSES
         let gamepasses = [];
         try {
             const gpRes = await axios.get(
@@ -62,6 +68,19 @@ app.get("/game/:placeId", async (req, res) => {
             );
             gamepasses = gpRes.data.data || [];
         } catch {}
+
+        // 🔥 SAFE VOTES (DOUBLE SOURCE)
+        const likes =
+            game.upVotes ??
+            game.upvoteCount ??
+            game.thumbsUpCount ??
+            0;
+
+        const dislikes =
+            game.downVotes ??
+            game.downvoteCount ??
+            game.thumbsDownCount ??
+            0;
 
         // 🔥 RESPONSE CLEAN
         res.json({
@@ -78,17 +97,8 @@ app.get("/game/:placeId", async (req, res) => {
                 maxPlayers: game.maxPlayers || 0,
                 visits: game.visits || 0,
 
-                likes:
-                    game.upVotes ??
-                    game.upvoteCount ??
-                    game.thumbsUpCount ??
-                    0,
-
-                dislikes:
-                    game.downVotes ??
-                    game.downvoteCount ??
-                    game.thumbsDownCount ??
-                    0,
+                likes,
+                dislikes,
 
                 favorites
             },
@@ -123,8 +133,4 @@ app.get("/game/:placeId", async (req, res) => {
             step: "main crash"
         });
     }
-});
-
-app.listen(PORT, () => {
-    console.log("🔥 API running on port " + PORT);
 });
