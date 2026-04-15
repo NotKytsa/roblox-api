@@ -74,11 +74,13 @@ app.get("/game/:placeId", async (req, res) => {
             },
 
             stats: {
-                currentPlayers: game.playing,
-                maxPlayers: game.maxPlayers,
-                visits: game.visits,
-                likes: game.upVotes,
-                dislikes: game.downVotes,
+                currentPlayers: game.playing || 0,
+                maxPlayers: game.maxPlayers || 0,
+                visits: game.visits || 0,
+
+                likes: game.upVotes ?? 0,
+                dislikes: game.downVotes ?? 0,
+
                 favorites
             },
 
